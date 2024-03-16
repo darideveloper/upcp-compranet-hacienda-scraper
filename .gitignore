@@ -1,6 +1,2 @@
-<<<<<<< HEAD
-.env
-__pycache__
-=======
->>>>>>> 6ec05f37794da622b4633577af54020b8db98f25
 *.xlsx
+venv
