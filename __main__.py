@@ -22,6 +22,8 @@ class Scraper(WebScraping):
         self.set_page(self.home_page)
         
         # Start xlsx
+        self.sheet_main_name = "main_table"
+        self.sheet_details_name = "details_table"
         current_folder = os.path.dirname(os.path.abspath(__file__))
         excel_path = os.path.join(current_folder, "data.xlsx")
         self.sheets = SpreadsheetManager(file_name=excel_path)
@@ -31,6 +33,7 @@ class Scraper(WebScraping):
         
         selector_spinner = '.spinner:not([style="display: none;"])'
         self.wait_die(selector_spinner, time_out=120)
+        self.refresh_selenium()
         
     def __set_date__(self, month: int, year: int, selector_calendar: str,
                      selector_back: str, selector_day: str):
@@ -63,6 +66,143 @@ class Scraper(WebScraping):
         # Select day
         self.click_js(selector_day)
         
+    def __go_next_page_main_table__(self) -> bool:
+        """ Go to the next page in the main table
+        
+        Returns:
+            bool: True if there is a next page, False otherwise
+        """
+        
+        selectors = {
+            "next_btn": '.p-paginator-next',
+            "next_btn_disbaled": '.p-paginator-next.p-disabled',
+        }
+        
+        self.click_js(selectors["next_btn"])
+        self.__wait_spinner__()
+        
+        if self.get_elems(selectors["next_btn_disbaled"]):
+            return False
+        
+        return True
+    
+    def __extract_table__(self, selectors: dict) -> list:
+        """ Extract data from table
+        
+        Args:
+            selector (dict): selectors for the table
+            
+        Returns:
+            list: data extracted
+        """
+        
+        # Get rows num
+        rows_num = len(self.get_elems(selectors["row"]))
+        
+        # Extract each required value for each row
+        data = []
+        for row_index in range(1, rows_num + 1):
+            row_data = []
+            for selector_name, selector_value in selectors.items():
+                
+                # Skip no required selectors
+                if selector_name in ["row"]:
+                    continue
+                
+                # Extract text
+                selector = selector_value.replace("index", f"{row_index}")
+                value = self.get_text(selector)
+                row_data.append(value)
+                    
+            data.append(row_data)
+            
+        return data
+    
+    def __extract_main_current_page__(self) -> list:
+        """ Extract data from the current page in the main table
+        
+        Returns:
+            list: data extracted from the main current page
+        """
+        
+        selectors = {
+            "row": '.p-datatable-unfrozen-view td:nth-child(1)',
+            "id": 'tr:nth-child(index) > td:nth-child(2)',
+            "caracter": '.p-datatable-unfrozen-view'
+                        ' tr:nth-child(index) > td:nth-child(1)',
+            "name": '.p-datatable-unfrozen-view tr:nth-child(index) > td:nth-child(2)',
+            "entity": 'tr:nth-child(index) > td:nth-child(3)',
+            "post_type": 'tr:nth-child(index) > td:nth-child(7)',
+        }
+        
+        return self.__extract_table__(selectors)
+        
+    def __search_id__(self, id: str):
+        """ Search a specific id in the main table
+        
+        Args:
+            id (str): id to search
+        """
+        
+        selectors = {
+            "search_input": 'input[name="noProcedimiento"]',
+            "submit": 'button[type="submit"]',
+            "tab": '#p-tabpanel-2-label',
+        }
+        
+        # Load home page
+        self.set_page(self.home_page)
+        self.__wait_spinner__()
+        
+        # Search
+        self.send_data(selectors["search_input"], id)
+        self.refresh_selenium()
+        self.click_js(selectors["submit"])
+        self.__wait_spinner__()
+        
+        # Move to tab
+        if self.get_elems(selectors["tab"]):
+            self.click_js(selectors["tab"])
+            self.__wait_spinner__()
+    
+    def __extract_contracts__(self) -> list:
+        """ Extract contracts from details page
+        
+        Returns:
+            list: matrix with contracts data
+        """
+        
+        selectors = {
+            "row": '#p-tabpanel-10 tr td:nth-child(1)',
+            "num": '#p-tabpanel-10 tr:nth-child(index) td:nth-child(1)',
+            "bidder": '#p-tabpanel-10 tr:nth-child(index) td:nth-child(2)',
+            "date": '#p-tabpanel-10 tr:nth-child(index) td:nth-child(6)',
+            "taxes": '#p-tabpanel-10 tr:nth-child(index) td:nth-child(8)',
+        }
+        
+        data = self.__extract_table__(selectors)
+        return data
+    
+    def __extract_requirements__(self) -> str:
+        """ Extract requirements from details page
+        
+        Returns:
+            str: matrix with requirements data
+        """
+        
+        selectors = {
+            "row": '#p-tabpanel-8 tr td:nth-child(1)',
+            "num": '#p-tabpanel-8 tr:nth-child(index) td:nth-child(1)',
+            "quantity": '#p-tabpanel-8 tr:nth-child(index) td:nth-child(7)',
+            "part": '#p-tabpanel-8 tr:nth-child(index) td:nth-child(2)',
+            "key": '#p-tabpanel-8 tr:nth-child(index) td:nth-child(3)',
+            "description": '#p-tabpanel-8 tr:nth-child(index) td:nth-child(4)',
+            "details": '#p-tabpanel-8 tr:nth-child(index) td:nth-child(5)',
+        }
+        
+        data = self.__extract_table__(selectors)
+        return data
+             
     def apply_filters(self):
         """ Apply search filters to the page"""
         
@@ -119,72 +259,17 @@ class Scraper(WebScraping):
         # Search
         self.click_js(self.selectors["submit"])
         self.__wait_spinner__()
-        self.refresh_selenium()
         
         self.click_js(self.selectors["tab"])
         self.__wait_spinner__()
-        self.refresh_selenium()
-    
-    def __go_next_page_main_table__(self) -> bool:
-        """ Go to the next page in the main table
-        
-        Returns:
-            bool: True if there is a next page, False otherwise
-        """
-        
-        selectors = {
-            "next_btn": '.p-paginator-next',
-            "next_btn_disbaled": '.p-paginator-next.p-disabled',
-        }
-        
-        self.click_js(selectors["next_btn"])
-        self.__wait_spinner__()
-        self.refresh_selenium()
-        
-        if self.get_elems(selectors["next_btn_disbaled"]):
-            return False
-        
-        return True
-    
-    def __extract_main_current_page__(self):
-        
-        selectors = {
-            "row": '.p-datatable-unfrozen-view td:nth-child(1)',
-            "id": 'tr:nth-child(index) > td:nth-child(2)',
-            "caracter": '.p-datatable-unfrozen-view'
-                        ' tr:nth-child(index) > td:nth-child(1)',
-            "name": '.p-datatable-unfrozen-view tr:nth-child(index) > td:nth-child(2)',
-            "entity": 'tr:nth-child(index) > td:nth-child(3)',
-            "post_type": 'tr:nth-child(index) > td:nth-child(7)',
-        }
-        
-        # Get rows num
-        rows_num = len(self.get_elems(selectors["row"]))
-        
-        # Extract each required value for each row
-        data = []
-        for row_index in range(1, rows_num + 1):
-            row_data = []
-            for selector_name, selector_value in selectors.items():
-                
-                # Skip no required selectors
-                if selector_name in ["row"]:
-                    continue
-                
-                # Extract text
-                selector = selector_value.replace("index", f"{row_index}")
-                value = self.get_text(selector)
-                row_data.append(value)
-                    
-            data.append(row_data)
-            
-        return data
     
     def extract_main_table(self):
         """ Get general data from main table"""
         
+        print("Extracting main table...")
+        
         # Set main table in excel
-        self.sheets.create_set_sheet("main_table")
+        self.sheets.create_set_sheet(self.sheet_main_name)
         
         # Move to start page
         for _ in range(START_PAGE - 1):
@@ -209,9 +294,93 @@ class Scraper(WebScraping):
             more_pages = self.__go_next_page_main_table__()
             if not more_pages:
                 break
+            
+    def extract_details(self):
+        """ Extract details from each id in the excel """
         
+        print("Extracting details table...")
         
+        selectors = {
+            "id": 'tr:nth-child(index) > td:nth-child(2)',
+            "dependency": '#p-tabpanel-3 > div label:nth-child(3)',
+            "branch": '#p-tabpanel-3 > div div:nth-child(2) label:nth-child(3)',
+            "unity": '#p-tabpanel-3 > div div:nth-child(3) label:nth-child(3)',
+            "in_charge": '#p-tabpanel-3 > div div:nth-child(4) label:nth-child(3)',
+            "email": '#p-tabpanel-3 > div div:nth-child(5) label:nth-child(3)',
+            "entity": 'app-sitiopublico-detalle-datos-general-pc'
+                      ' div:nth-child(4) label:nth-child(3)',
+        }
+        
+        # Read main table
+        self.sheets.create_set_sheet(self.sheet_main_name)
+        sheets_data = self.sheets.get_data()[2:]
+        
+        # Read data from excel
+        self.sheets.create_set_sheet(self.sheet_details_name)
+        
+        for row in sheets_data:
+            
+            sheets_index = sheets_data.index(row) + 2
+            
+            # Search id
+            id = row[0]
+            print(f"\tExtracting details from {id}...")
+            self.__search_id__(id)
+            self.__wait_spinner__()
+            
+            # Open details
+            selector_id = selectors["id"].replace("index", "1")
+            self.click_js(selector_id)
+            self.__wait_spinner__()
+            sleep(5)
+            self.refresh_selenium()
+            
+            # Extract general data
+            general_data = []
+            del selectors["id"]
+            for selector_name, selector_value in selectors.items():
+                value = self.get_text(selector_value)
+                general_data.append(value)
+            
+            # Extract internal tables
+            contracts = self.__extract_contracts__()
+            
+            # Extract internal tables
+            requirements = self.__extract_requirements__()
+
+            # Merge contracts and requirements
+            data = []
+            len_contracts = len(contracts)
+            len_requirements = len(requirements)
+            for index in range(max(len_contracts, len_requirements)):
+                
+                # Add data or empty cell
+                if index < len_contracts:
+                    contract = contracts[index]
+                else:
+                    contract = [""] * 4
+                    
+                if index < len_requirements:
+                    requirement = requirements[index]
+                else:
+                    requirement = [""] * 6
+                    
+                data.append(general_data + contract + requirement)
+                
+            # Write data in excel
+            self.sheets.write_data(data, sheets_index)
+            self.sheets.save()
+
+            
 if __name__ == "__main__":
     scraper = Scraper()
-    scraper.apply_filters()
-    scraper.extract_main_table()
+    
+    # Main table
+    # scraper.apply_filters()
+    # scraper.extract_main_table()
+    
+    # Extract details tables
+    scraper.extract_details()
+   
+    # Download files
+    
