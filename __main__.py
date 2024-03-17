@@ -279,7 +279,7 @@ class Scraper(WebScraping):
         page = START_PAGE
         while True:
             
-            print(f"Extracting page {page} from main table...")
+            print(f"\tExtracting page {page} from main table...")
             
             # Extract data
             data = self.__extract_main_current_page__()
@@ -373,14 +373,24 @@ class Scraper(WebScraping):
 
             
 if __name__ == "__main__":
+    
+    # Main menu
+    print("1. Extract main data\n2. Extract details\n3. Download files")
+    option = input("Select an option: ").lower().strip()
+    
+    # Start scraper
     scraper = Scraper()
     
-    # Main table
-    # scraper.apply_filters()
-    # scraper.extract_main_table()
-    
-    # Extract details tables
-    scraper.extract_details()
-   
-    # Download files
-    
+    if option == "1":
+        # Main table
+        scraper.apply_filters()
+        scraper.extract_main_table()
+    elif option == "2":
+        # details tables
+        scraper.extract_details()
+    elif option == "3":
+        # download files
+        pass
+    else:
+        print("Invalid option")
+       
