@@ -154,6 +154,11 @@ class Scraper(WebScraping):
         self.set_page(self.home_page)
         self.__wait_spinner__()
         
+        # Remove input old value
+        script = f"""document.querySelector('{selectors["search_input"]}').value = ''"""
+        self.driver.execute_script(script)
+        self.refresh_selenium()
+        
         # Search
         self.send_data(selectors["search_input"], id)
         self.refresh_selenium()
@@ -337,8 +342,9 @@ class Scraper(WebScraping):
             
             # Extract general data
             general_data = []
-            del selectors["id"]
-            for selector_name, selector_value in selectors.items():
+            selectors_copy = selectors.copy()
+            del selectors_copy["id"]
+            for _, selector_value in selectors_copy.items():
                 value = self.get_text(selector_value)
                 general_data.append(value)
             
