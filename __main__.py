@@ -178,11 +178,16 @@ class Scraper(WebScraping):
         """
         
         selectors = {
-            "row": '#p-tabpanel-10 tr td:nth-child(1)',
-            "num": '#p-tabpanel-10 tr:nth-child(index) td:nth-child(1)',
-            "bidder": '#p-tabpanel-10 tr:nth-child(index) td:nth-child(2)',
-            "date": '#p-tabpanel-10 tr:nth-child(index) td:nth-child(6)',
-            "taxes": '#p-tabpanel-10 tr:nth-child(index) td:nth-child(8)',
+            "row": '[key="detalleDRC"] + br + [class="p-grid"]'
+                   ' tr td:nth-child(1)',
+            "num": '[key="detalleDRC"] + br + [class="p-grid"]'
+                   ' tr:nth-child(index) td:nth-child(1)',
+            "bidder": '[key="detalleDRC"] + br + [class="p-grid"]'
+                      ' tr:nth-child(index) td:nth-child(2)',
+            "date": '[key="detalleDRC"] + br + [class="p-grid"]'
+                    ' tr:nth-child(index) td:nth-child(6)',
+            "taxes": '[key="detalleDRC"] + br + [class="p-grid"]'
+                     ' tr:nth-child(index) td:nth-child(8)',
         }
         
         data = self.__extract_table__(selectors)
@@ -196,13 +201,20 @@ class Scraper(WebScraping):
         """
         
         selectors = {
-            "row": '#p-tabpanel-8 tr td:nth-child(1)',
-            "num": '#p-tabpanel-8 tr:nth-child(index) td:nth-child(1)',
-            "quantity": '#p-tabpanel-8 tr:nth-child(index) td:nth-child(7)',
-            "part": '#p-tabpanel-8 tr:nth-child(index) td:nth-child(2)',
-            "key": '#p-tabpanel-8 tr:nth-child(index) td:nth-child(3)',
-            "description": '#p-tabpanel-8 tr:nth-child(index) td:nth-child(4)',
-            "details": '#p-tabpanel-8 tr:nth-child(index) td:nth-child(5)',
+            "row": '[class="p-fluid p-formgrid p-grid"] > div:last-child'
+                   ' tr td:nth-child(1)',
+            "num": '[class="p-fluid p-formgrid p-grid"] > div:last-child'
+                   ' tr:nth-child(index) td:nth-child(1)',
+            "quantity": '[class="p-fluid p-formgrid p-grid"] > div:last-child'
+                        ' tr:nth-child(index) td:nth-child(7)',
+            "part": '[class="p-fluid p-formgrid p-grid"] > div:last-child'
+                    ' tr:nth-child(index) td:nth-child(2)',
+            "key": '[class="p-fluid p-formgrid p-grid"] > div:last-child'
+                   ' tr:nth-child(index) td:nth-child(3)',
+            "description": '[class="p-fluid p-formgrid p-grid"] > div:last-child'
+                           ' tr:nth-child(index) td:nth-child(4)',
+            "details": '[class="p-fluid p-formgrid p-grid"] > div:last-child'
+                       ' tr:nth-child(index) td:nth-child(5)',
         }
         
         data = self.__extract_table__(selectors)
@@ -323,10 +335,9 @@ class Scraper(WebScraping):
         # Read data from excel
         self.sheets.create_set_sheet(self.sheet_details_name)
         
+        rows_saved = 3
         for row in sheets_data:
-            
-            sheets_index = sheets_data.index(row) + 2
-            
+                        
             # Search id
             id = row[0]
             print(f"\tExtracting details from {id}...")
@@ -337,7 +348,7 @@ class Scraper(WebScraping):
             selector_id = selectors["id"].replace("index", "1")
             self.click_js(selector_id)
             self.__wait_spinner__()
-            sleep(5)
+            sleep(8)
             self.refresh_selenium()
             
             # Extract general data
@@ -374,8 +385,11 @@ class Scraper(WebScraping):
                 data.append(general_data + contract + requirement)
                 
             # Write data in excel
-            self.sheets.write_data(data, sheets_index)
+            self.sheets.write_data(data, rows_saved)
             self.sheets.save()
+            rows_saved += len(data)
+            
+            print(f"\t\tlast row: {rows_saved}")
 
             
 if __name__ == "__main__":
