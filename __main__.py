@@ -10,7 +10,6 @@ load_dotenv()
 START_PAGE = int(os.getenv("START_PAGE"))
 
 
-
 class Scraper(WebScraping):
 
     def __init__(self):
@@ -471,7 +470,7 @@ class Scraper(WebScraping):
                 if index < len_requirements:
                     requirement = requirements[index]
                 else:
-                    requirement = [""] * 6
+                    requirement = [" "] * 6
                     
                 data.append(row + general_data + contract + requirement)
                 
