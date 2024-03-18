@@ -421,18 +421,37 @@ class Scraper(WebScraping):
         
         # Read main table
         self.sheets.create_set_sheet(self.sheet_main_name)
-        sheets_data = self.sheets.get_data()[2:]
+        main_data = self.sheets.get_data()[2:]
         
         # Read data from excel
         self.sheets.create_set_sheet(self.sheet_details_name)
         
-        rows_saved = 3
-        max_row = len(sheets_data)
-        for row in sheets_data:
+        # Detect last rows saved
+        last_index_main = 0
+        last_index_details = 0
+        details_data = self.sheets.get_data()
+        details_data = list(filter(lambda row: row[0], details_data))
+        
+        if details_data:
+            last_id = details_data[-1][0]
+            
+            for index in range(len(main_data)):
+                if main_data[index][0] == last_id:
+                    last_index_main = index
+                    break
+                
+            for index in range(len(details_data)):
+                if details_data[index][0] == last_id:
+                    last_index_details = index
+                    break
+        
+        rows_saved = 3 + last_index_details
+        max_row = len(main_data)
+        for row in main_data[last_index_main:]:
                         
             # Search id
             id = row[0]
-            index_row = sheets_data.index(row) + 1
+            index_row = main_data.index(row) + 1
             print(f"\tExtracting details from {id} ({index_row}/{max_row})...")
             self.__search_id__(id)
             self.__wait_spinner__()
@@ -487,6 +506,7 @@ class Scraper(WebScraping):
         selectors = {
             "id": 'tr:nth-child(1) > td:nth-child(2)',
         }
+        
         
         # Read main table
         self.sheets.create_set_sheet(self.sheet_main_name)
