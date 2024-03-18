@@ -315,15 +315,20 @@ class Scraper(WebScraping):
     def extract_details(self):
         """ Extract details from each id in the excel """
         
-        print("Extracting details table...")
+        print("Extracting details tables...")
         
         selectors = {
             "id": 'tr:nth-child(index) > td:nth-child(2)',
-            "dependency": '#p-tabpanel-3 > div label:nth-child(3)',
-            "branch": '#p-tabpanel-3 > div div:nth-child(2) label:nth-child(3)',
-            "unity": '#p-tabpanel-3 > div div:nth-child(3) label:nth-child(3)',
-            "in_charge": '#p-tabpanel-3 > div div:nth-child(4) label:nth-child(3)',
-            "email": '#p-tabpanel-3 > div div:nth-child(5) label:nth-child(3)',
+            "dependency": 'app-sitiopublico-detalle-datos-ente-pc'
+                          ' > div label:nth-child(3)',
+            "branch": 'app-sitiopublico-detalle-datos-ente-pc'
+                      ' > div div:nth-child(2) label:nth-child(3)',
+            "unity": 'app-sitiopublico-detalle-datos-ente-pc'
+                     ' > div div:nth-child(3) label:nth-child(3)',
+            "in_charge": 'app-sitiopublico-detalle-datos-ente-pc'
+                     ' > div div:nth-child(4) label:nth-child(3)',
+            "email": 'app-sitiopublico-detalle-datos-ente-pc'
+                     ' > div div:nth-child(5) label:nth-child(3)',
             "entity": 'app-sitiopublico-detalle-datos-general-pc'
                       ' div:nth-child(4) label:nth-child(3)',
         }
@@ -382,14 +387,12 @@ class Scraper(WebScraping):
                 else:
                     requirement = [""] * 6
                     
-                data.append(general_data + contract + requirement)
+                data.append(row + general_data + contract + requirement)
                 
             # Write data in excel
             self.sheets.write_data(data, rows_saved)
             self.sheets.save()
             rows_saved += len(data)
-            
-            print(f"\t\tlast row: {rows_saved}")
 
             
 if __name__ == "__main__":
