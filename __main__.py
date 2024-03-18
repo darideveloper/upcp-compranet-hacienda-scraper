@@ -427,11 +427,13 @@ class Scraper(WebScraping):
         self.sheets.create_set_sheet(self.sheet_details_name)
         
         rows_saved = 3
+        max = len(sheets_data)
         for row in sheets_data:
                         
             # Search id
             id = row[0]
-            print(f"\tExtracting details from {id}...")
+            index = sheets_data.index(row) + 1
+            print(f"\tExtracting details from {id} ({index}/{max})...")
             self.__search_id__(id)
             self.__wait_spinner__()
             
@@ -493,11 +495,13 @@ class Scraper(WebScraping):
         # Read data from excel
         self.sheets.create_set_sheet(self.sheet_details_name)
         
+        max = len(sheets_data)
         for row in sheets_data:
                         
             # Search id
             id = row[0]
-            print(f"\tDownloading files from {id}...")
+            index = sheets_data.index(row) + 1
+            print(f"\tDownloading files from {id} ({index}/{max})...")
             self.__search_id__(id)
             self.__wait_spinner__()
             
