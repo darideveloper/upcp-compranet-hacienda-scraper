@@ -254,6 +254,20 @@ class Scraper(WebScraping):
             num = self.get_text(selectors["num"].replace("index", str(row_index)))
             type = self.get_text(selectors["type"].replace("index", str(row_index)))
             
+            # Create id folder
+            id_folder = os.path.join(self.downloads_folder, id)
+            os.makedirs(id_folder, exist_ok=True)
+            
+            # New file path
+            file_ext = "pdf"
+            file_name = f"{id} - {num} - {type}.{file_ext}"
+            moved_file_path = os.path.join(id_folder, file_name)
+            
+            # Skip if file already exists
+            if os.path.exists(moved_file_path):
+                print(f"\t\tFile {num} - {type} already downloaded")
+                continue
+            
             # Try to downbload file 3 times
             downloaded = False
             for _ in range(3):
@@ -280,14 +294,7 @@ class Scraper(WebScraping):
             
             new_file_path = os.path.join(self.downloads_folder, new_files[0])
             
-            # Create id folder
-            id_folder = os.path.join(self.downloads_folder, id)
-            os.makedirs(id_folder, exist_ok=True)
-            
             # Move file to id folder
-            file_ext = new_file_path.split(".")[-1]
-            file_name = f"{id} - {num} - {type}.{file_ext}"
-            moved_file_path = os.path.join(id_folder, file_name)
             os.rename(new_file_path, moved_file_path)
             
             print(f"\t\tFile {num} - {type} downloaded")
