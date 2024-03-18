@@ -10,22 +10,27 @@ load_dotenv()
 START_PAGE = int(os.getenv("START_PAGE"))
 
 
+
 class Scraper(WebScraping):
 
     def __init__(self):
         """ Start chrome, load the home page and initialice excel file"""
         
+        # Paths
+        current_folder = os.path.dirname(os.path.abspath(__file__))
+        excel_path = os.path.join(current_folder, "data.xlsx")
+        self.downloads_folder = os.path.join(current_folder, "downloads")
+        os.makedirs(self.downloads_folder, exist_ok=True)
+        
         # Start scraper
         self.home_page = "https://upcp-compranet.hacienda.gob.mx/sitiopublico/#/"
         
-        super().__init__(width=1920, height=1080)
+        super().__init__(width=1920, height=1080, download_folder=self.downloads_folder)
         self.set_page(self.home_page)
         
         # Start xlsx
         self.sheet_main_name = "main_table"
         self.sheet_details_name = "details_table"
-        current_folder = os.path.dirname(os.path.abspath(__file__))
-        excel_path = os.path.join(current_folder, "data.xlsx")
         self.sheets = SpreadsheetManager(file_name=excel_path)
         
     def __wait_spinner__(self):
@@ -219,7 +224,63 @@ class Scraper(WebScraping):
         
         data = self.__extract_table__(selectors)
         return data
-             
+    
+    def __download_files_page__(self, id: str):
+        """ Download files from current page
+        
+        Args:
+            id (str): id to search
+        """
+        
+        selectors = {
+            "row": '[key="anexos"] + br + .p-grid tr td:nth-child(1)',
+            "num": '[key="anexos"] + br + .p-grid tr:nth-child(index) td:nth-child(1)',
+            "type": '[key="anexos"] + br + .p-grid tr:nth-child(index) td:nth-child(2)',
+            "download_btn": '[key="anexos"] + br + .p-grid'
+                            ' tr:nth-child(index) td.oculto-impresion i',
+            "next_btn": '[key="anexos"] + br + .p-grid'
+                        ' .p-paginator-next:not(.p-disabled)'
+        }
+        
+        # Old files in download folder
+        old_files = os.listdir(self.downloads_folder)
+        
+        # Loop rows
+        rows_num = len(self.get_elems(selectors["row"]))
+        for row_index in range(1, rows_num + 1):
+            
+            # Download file and wait to finish
+            self.click(selectors["download_btn"].replace("index", str(row_index)))
+            self.__wait_spinner__()
+            sleep(15)
+            
+            # Get num anbd document type
+            num = self.get_text(selectors["num"].replace("index", str(row_index)))
+            type = self.get_text(selectors["type"].replace("index", str(row_index)))
+
+            # Detect new file
+            new_files = os.listdir(self.downloads_folder)
+            new_file = list(set(new_files) - set(old_files))
+            new_file_path = os.path.join(self.downloads_folder, new_file[0])
+            
+            # Create id folder
+            id_folder = os.path.join(self.downloads_folder, id)
+            os.makedirs(id_folder, exist_ok=True)
+            
+            # Move file to id folder
+            file_ext = new_file_path.split(".")[-1]
+            file_name = f"{id} - {num} - {type}.{file_ext}"
+            moved_file_path = os.path.join(id_folder, file_name)
+            os.rename(new_file_path, moved_file_path)
+        
+        # Validate and go to next page
+        if self.get_elems(selectors["next_btn"]):
+            self.click_js(selectors["next_btn"])
+            self.__wait_spinner__()
+            return True
+    
+        return False
+        
     def apply_filters(self):
         """ Apply search filters to the page"""
         
@@ -318,7 +379,7 @@ class Scraper(WebScraping):
         print("Extracting details tables...")
         
         selectors = {
-            "id": 'tr:nth-child(index) > td:nth-child(2)',
+            "id": 'tr:nth-child(1) > td:nth-child(2)',
             "dependency": 'app-sitiopublico-detalle-datos-ente-pc'
                           ' > div label:nth-child(3)',
             "branch": 'app-sitiopublico-detalle-datos-ente-pc'
@@ -350,8 +411,7 @@ class Scraper(WebScraping):
             self.__wait_spinner__()
             
             # Open details
-            selector_id = selectors["id"].replace("index", "1")
-            self.click_js(selector_id)
+            self.click_js(selectors["id"])
             self.__wait_spinner__()
             sleep(8)
             self.refresh_selenium()
@@ -394,6 +454,40 @@ class Scraper(WebScraping):
             self.sheets.save()
             rows_saved += len(data)
 
+    def download_files(self):
+        """ Download attached files from each id in the excel """
+        
+        selectors = {
+            "id": 'tr:nth-child(1) > td:nth-child(2)',
+        }
+        
+        # Read main table
+        self.sheets.create_set_sheet(self.sheet_main_name)
+        sheets_data = self.sheets.get_data()[2:]
+        
+        # Read data from excel
+        self.sheets.create_set_sheet(self.sheet_details_name)
+        
+        for row in sheets_data:
+                        
+            # Search id
+            id = row[0]
+            print(f"\tDownloading files from {id}...")
+            self.__search_id__(id)
+            self.__wait_spinner__()
+            
+            # Open details
+            self.click_js(selectors["id"])
+            self.__wait_spinner__()
+            sleep(8)
+            self.refresh_selenium()
+            
+            # Download files
+            while True:
+                more_pages = self.__download_files_page__(id)
+                if not more_pages:
+                    break
+                
             
 if __name__ == "__main__":
     
@@ -413,7 +507,7 @@ if __name__ == "__main__":
         scraper.extract_details()
     elif option == "3":
         # download files
-        pass
+        scraper.download_files()
     else:
         print("Invalid option")
        
