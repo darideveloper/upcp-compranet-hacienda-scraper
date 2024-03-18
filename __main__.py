@@ -244,24 +244,41 @@ class Scraper(WebScraping):
         
         # Old files in download folder
         old_files = os.listdir(self.downloads_folder)
+        old_files = list(filter(lambda file: file.endswith(".pdf"), old_files))
         
         # Loop rows
         rows_num = len(self.get_elems(selectors["row"]))
         for row_index in range(1, rows_num + 1):
             
-            # Download file and wait to finish
-            self.click(selectors["download_btn"].replace("index", str(row_index)))
-            self.__wait_spinner__()
-            sleep(15)
-            
             # Get num anbd document type
             num = self.get_text(selectors["num"].replace("index", str(row_index)))
             type = self.get_text(selectors["type"].replace("index", str(row_index)))
+            
+            # Try to downbload file 3 times
+            downloaded = False
+            for _ in range(3):
+            
+                # Download file and wait to finish
+                self.click(selectors["download_btn"].replace("index", str(row_index)))
+                self.__wait_spinner__()
+                sleep(15)
 
-            # Detect new file
-            new_files = os.listdir(self.downloads_folder)
-            new_file = list(set(new_files) - set(old_files))
-            new_file_path = os.path.join(self.downloads_folder, new_file[0])
+                # Detect new file
+                new_files = os.listdir(self.downloads_folder)
+                new_files = list(filter(lambda file: file.endswith(".pdf"), new_files))
+                new_files = list(set(new_files) - set(old_files))
+                if not new_files:
+                    print(f"\t\tFile {num} - {type} not downloaded. Retrying...")
+                    continue
+                
+                downloaded = True
+                break
+            
+            if not downloaded:
+                print(f"\t\tFile {num} - {type} not downloaded")
+                continue
+            
+            new_file_path = os.path.join(self.downloads_folder, new_files[0])
             
             # Create id folder
             id_folder = os.path.join(self.downloads_folder, id)
@@ -272,6 +289,8 @@ class Scraper(WebScraping):
             file_name = f"{id} - {num} - {type}.{file_ext}"
             moved_file_path = os.path.join(id_folder, file_name)
             os.rename(new_file_path, moved_file_path)
+            
+            print(f"\t\tFile {num} - {type} downloaded")
         
         # Validate and go to next page
         if self.get_elems(selectors["next_btn"]):
