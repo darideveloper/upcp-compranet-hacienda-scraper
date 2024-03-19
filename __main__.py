@@ -491,7 +491,7 @@ class Scraper(WebScraping):
                 else:
                     requirement = [" "] * 6
                     
-                data.append(row + general_data + contract + requirement)
+                data.append(list(row) + general_data + contract + requirement)
                 
             # Write data in excel
             self.sheets.write_data(data, rows_saved)
