@@ -154,6 +154,11 @@ class Scraper(WebScraping):
             "tab": '#p-tabpanel-2-label',
         }
         
+        # Move to tab
+        if self.get_elems(selectors["tab"]):
+            self.click_js(selectors["tab"])
+            self.__wait_spinner__()
+            
         # Load home page
         self.set_page(self.home_page)
         self.__wait_spinner__()
@@ -168,11 +173,6 @@ class Scraper(WebScraping):
         self.refresh_selenium()
         self.click_js(selectors["submit"])
         self.__wait_spinner__()
-        
-        # Move to tab
-        if self.get_elems(selectors["tab"]):
-            self.click_js(selectors["tab"])
-            self.__wait_spinner__()
     
     def __extract_contracts__(self) -> list:
         """ Extract contracts from details page
@@ -497,6 +497,8 @@ class Scraper(WebScraping):
             self.sheets.write_data(data, rows_saved)
             self.sheets.save()
             rows_saved += len(data)
+            
+            sleep(30)
 
     def download_files(self):
         """ Download attached files from each id in the excel """
