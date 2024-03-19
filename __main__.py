@@ -525,7 +525,7 @@ class Scraper(WebScraping):
             # Skip if download folder already exists
             id_folder = os.path.join(self.downloads_folder, id)
             if os.path.exists(id_folder):
-                print(f"\t\tFiles already downloaded for {id}. Skipping...")
+                print(f"\tFiles already downloaded for {id}. Skipping...")
                 continue
                         
             # Search id
