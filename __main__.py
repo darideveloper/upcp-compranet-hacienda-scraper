@@ -36,7 +36,7 @@ class Scraper(WebScraping):
         """ Wait until page loads, checking the spinner """
         
         selector_spinner = '.spinner:not([style="display: none;"])'
-        self.wait_die(selector_spinner, time_out=120)
+        self.wait_die(selector_spinner, time_out=300)
         self.refresh_selenium()
         
     def __set_date__(self, month: int, year: int, selector_calendar: str,
