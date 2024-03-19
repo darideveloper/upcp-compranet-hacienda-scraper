@@ -262,11 +262,6 @@ class Scraper(WebScraping):
             file_name = f"{id} - {num} - {type}.{file_ext}"
             moved_file_path = os.path.join(id_folder, file_name)
             
-            # Skip if file already exists
-            if os.path.exists(moved_file_path):
-                print(f"\t\tFile {num} - {type} already downloaded")
-                continue
-            
             # Try to downbload file 3 times
             downloaded = False
             for _ in range(3):
@@ -423,6 +418,9 @@ class Scraper(WebScraping):
         self.sheets.create_set_sheet(self.sheet_main_name)
         main_data = self.sheets.get_data()[2:]
         
+        # Remove duplicated data
+        main_data = list(set(map(tuple, main_data)))
+                
         # Read data from excel
         self.sheets.create_set_sheet(self.sheet_details_name)
         
@@ -507,19 +505,28 @@ class Scraper(WebScraping):
             "id": 'tr:nth-child(1) > td:nth-child(2)',
         }
         
-        
         # Read main table
         self.sheets.create_set_sheet(self.sheet_main_name)
         sheets_data = self.sheets.get_data()[2:]
+        
+        # Remove duplicated data
+        sheets_data = list(set(map(tuple, sheets_data)))
         
         # Read data from excel
         self.sheets.create_set_sheet(self.sheet_details_name)
         
         max_row = len(sheets_data)
         for row in sheets_data:
+            
+            id = row[0]
+            
+            # Skip if download folder already exists
+            id_folder = os.path.join(self.downloads_folder, id)
+            if os.path.exists(id_folder):
+                print(f"\t\tFiles already downloaded for {id}. Skipping...")
+                continue
                         
             # Search id
-            id = row[0]
             index_row = sheets_data.index(row) + 1
             print(f"\tDownloading files from {id} ({index_row}/{max_row})...")
             self.__search_id__(id)
