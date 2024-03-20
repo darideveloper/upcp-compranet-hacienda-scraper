@@ -232,7 +232,7 @@ class Scraper(WebScraping):
         """
         
         selectors = {
-            "row": '[key="anexos"] + br + .p-grid tr td:nth-child(1)',
+            "row": '[key="anexos"] + br + .p-grid tr td:nth-child(1):not([colspan="9"])',
             "num": '[key="anexos"] + br + .p-grid tr:nth-child(index) td:nth-child(1)',
             "type": '[key="anexos"] + br + .p-grid tr:nth-child(index) td:nth-child(2)',
             "download_btn": '[key="anexos"] + br + .p-grid'
